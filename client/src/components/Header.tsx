@@ -1,12 +1,22 @@
-import { Search, Bell, User, Menu, X } from "lucide-react";
+import { Search, Bell, User, Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Link } from "wouter";
+import { useAuth } from "@/lib/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { user, logout, isAuthenticated } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-background via-background/95 to-background/0 backdrop-blur-sm">
@@ -46,13 +56,39 @@ export default function Header() {
               />
             </div>
 
-            <Button size="icon" variant="ghost" data-testid="button-notifications">
-              <Bell className="w-5 h-5" />
-            </Button>
+            {isAuthenticated && (
+              <>
+                <Button size="icon" variant="ghost" data-testid="button-notifications">
+                  <Bell className="w-5 h-5" />
+                </Button>
 
-            <Button size="icon" variant="ghost" data-testid="button-profile">
-              <User className="w-5 h-5" />
-            </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost" data-testid="button-profile">
+                      <User className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>
+                      {user?.nombre || 'Usuario'}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} data-testid="button-logout">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Cerrar sesión
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+
+            {!isAuthenticated && (
+              <Link href="/login">
+                <Button variant="default" size="sm" data-testid="button-login-header">
+                  Iniciar sesión
+                </Button>
+              </Link>
+            )}
 
             <Button
               size="icon"

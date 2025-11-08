@@ -4,77 +4,105 @@ import MovieHero from "@/components/MovieHero";
 import MovieGrid from "@/components/MovieGrid";
 import MovieDetail from "@/components/MovieDetail";
 import Footer from "@/components/Footer";
+import { useMovies, useMovie } from "@/hooks/useMovies";
+import { useFavorites } from "@/hooks/useFavorites";
 
 import heroImage from '@assets/generated_images/Cityscape_hero_banner_7ee16f15.png';
-import poster1 from '@assets/generated_images/Sci-fi_thriller_poster_88fc24fd.png';
-import poster2 from '@assets/generated_images/Action_adventure_poster_f492de19.png';
-import poster3 from '@assets/generated_images/Romantic_drama_poster_b639f1fb.png';
-import poster4 from '@assets/generated_images/Horror_thriller_poster_9b7f00e0.png';
-import poster5 from '@assets/generated_images/Comedy_film_poster_00a4c9b8.png';
-import poster6 from '@assets/generated_images/Fantasy_epic_poster_f94e6dc9.png';
 
 export default function Home() {
-  const [selectedMovie, setSelectedMovie] = useState<number | null>(null);
-  const [favorites, setFavorites] = useState<Set<number>>(new Set([2, 5]));
+  const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
+  const { data: moviesData, isLoading, isError, error, refetch } = useMovies(1, 50);
+  const { data: selectedMovieData, isError: isDetailError, error: detailError, refetch: refetchDetail } = useMovie(selectedMovieId || 0);
+  const { isFavorite, toggleFavorite } = useFavorites();
 
-  const trendingMovies = [
-    { id: 1, title: "Inception", image: poster1, year: 2010, rating: "PG-13", isFavorite: favorites.has(1) },
-    { id: 2, title: "The Dark Knight", image: poster2, year: 2008, rating: "PG-13", isFavorite: favorites.has(2) },
-    { id: 3, title: "Interstellar", image: poster3, year: 2014, rating: "PG-13", isFavorite: favorites.has(3) },
-    { id: 4, title: "The Prestige", image: poster4, year: 2006, rating: "PG-13", isFavorite: favorites.has(4) },
-    { id: 5, title: "Dunkirk", image: poster5, year: 2017, rating: "PG-13", isFavorite: favorites.has(5) },
-  ];
+  const API_BASE_URL = 'http://localhost:8000';
 
-  const popularMovies = [
-    { id: 6, title: "Tenet", image: poster6, year: 2020, rating: "PG-13", isFavorite: favorites.has(6) },
-    { id: 7, title: "Memento", image: poster1, year: 2000, rating: "R", isFavorite: favorites.has(7) },
-    { id: 8, title: "The Batman", image: poster2, year: 2022, rating: "PG-13", isFavorite: favorites.has(8) },
-    { id: 9, title: "Oppenheimer", image: poster3, year: 2023, rating: "R", isFavorite: favorites.has(9) },
-    { id: 10, title: "The Departed", image: poster4, year: 2006, rating: "R", isFavorite: favorites.has(10) },
-  ];
+  const movies = moviesData?.items || [];
+  const trendingMovies = movies.slice(0, 10).map(movie => ({
+    id: movie.id,
+    title: movie.titulo,
+    image: movie.image_url ? `${API_BASE_URL}${movie.image_url}` : heroImage,
+    year: movie.año,
+    rating: movie.clasificacion,
+    isFavorite: isFavorite(movie.id),
+  }));
 
-  const actionMovies = [
-    { id: 11, title: "Mad Max", image: poster5, year: 2015, rating: "R", isFavorite: favorites.has(11) },
-    { id: 12, title: "John Wick", image: poster6, year: 2014, rating: "R", isFavorite: favorites.has(12) },
-    { id: 13, title: "Extraction", image: poster1, year: 2020, rating: "R", isFavorite: favorites.has(13) },
-    { id: 14, title: "Mission Impossible", image: poster2, year: 2018, rating: "PG-13", isFavorite: favorites.has(14) },
-    { id: 15, title: "The Raid", image: poster3, year: 2011, rating: "R", isFavorite: favorites.has(15) },
-  ];
+  const popularMovies = movies.slice(10, 20).map(movie => ({
+    id: movie.id,
+    title: movie.titulo,
+    image: movie.image_url ? `${API_BASE_URL}${movie.image_url}` : heroImage,
+    year: movie.año,
+    rating: movie.clasificacion,
+    isFavorite: isFavorite(movie.id),
+  }));
 
-  const toggleFavorite = (id: number) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(id)) {
-        newFavorites.delete(id);
-      } else {
-        newFavorites.add(id);
-      }
-      return newFavorites;
-    });
-    console.log('Toggled favorite for movie:', id);
-  };
+  const actionMovies = movies.slice(20, 30).map(movie => ({
+    id: movie.id,
+    title: movie.titulo,
+    image: movie.image_url ? `${API_BASE_URL}${movie.image_url}` : heroImage,
+    year: movie.año,
+    rating: movie.clasificacion,
+    isFavorite: isFavorite(movie.id),
+  }));
 
+  const heroMovie = movies[0];
   const handleMovieClick = (id: number) => {
-    setSelectedMovie(id);
-    console.log('Selected movie:', id);
+    setSelectedMovieId(id);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Cargando películas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-md px-4">
+            <h2 className="text-2xl font-semibold mb-3">Error al cargar películas</h2>
+            <p className="text-muted-foreground mb-6">
+              {(error as any)?.message || 'No se pudieron cargar las películas. Por favor, verifica tu conexión.'}
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover-elevate active-elevate-2"
+              data-testid="button-retry"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
       <Header />
       
-      <MovieHero
-        title="The Matrix Resurrections"
-        synopsis="Return to a world of two realities: one, everyday life; the other, what lies behind it. To find out if his reality is a physical or mental construct, to truly know himself, Mr. Anderson will have to choose to follow the white rabbit once more."
-        backdrop={heroImage}
-        year={2021}
-        rating="R"
-        duration={148}
-        isFavorite={favorites.has(999)}
-        onPlay={() => console.log('Play hero movie')}
-        onToggleFavorite={() => toggleFavorite(999)}
-        onMoreInfo={() => handleMovieClick(999)}
-      />
+      {heroMovie && (
+        <MovieHero
+          title={heroMovie.titulo}
+          synopsis={heroMovie.sinopsis || 'Sin sinopsis disponible'}
+          backdrop={heroMovie.image_url ? `${API_BASE_URL}${heroMovie.image_url}` : heroImage}
+          year={heroMovie.año}
+          rating={heroMovie.clasificacion}
+          duration={heroMovie.duracion}
+          isFavorite={isFavorite(heroMovie.id)}
+          onPlay={() => console.log('Play hero movie')}
+          onToggleFavorite={() => toggleFavorite(heroMovie.id)}
+          onMoreInfo={() => handleMovieClick(heroMovie.id)}
+        />
+      )}
 
       <div className="space-y-12 py-12">
         <MovieGrid
@@ -104,23 +132,49 @@ export default function Home() {
 
       <Footer />
 
-      {selectedMovie !== null && (
-        <MovieDetail
-          title="Inception"
-          synopsis="Dom Cobb is a skilled thief, the absolute best in the dangerous art of extraction, stealing valuable secrets from deep within the subconscious during the dream state, when the mind is at its most vulnerable. Cobb's rare ability has made him a coveted player in this treacherous new world of corporate espionage, but it has also made him an international fugitive and cost him everything he has ever loved."
-          backdrop={heroImage}
-          director="Christopher Nolan"
-          genre="Ciencia Ficción, Acción, Thriller"
-          year={2010}
-          duration={148}
-          rating="PG-13"
-          isFavorite={favorites.has(selectedMovie)}
-          onClose={() => setSelectedMovie(null)}
-          onPlay={() => console.log('Play from detail')}
-          onToggleFavorite={() => {
-            toggleFavorite(selectedMovie);
-          }}
-        />
+      {selectedMovieId !== null && (
+        <>
+          {isDetailError ? (
+            <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center">
+              <div className="text-center max-w-md px-4">
+                <h2 className="text-2xl font-semibold mb-3">Error al cargar detalles</h2>
+                <p className="text-muted-foreground mb-6">
+                  {(detailError as any)?.message || 'No se pudieron cargar los detalles de la película.'}
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => refetchDetail()}
+                    className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover-elevate active-elevate-2"
+                    data-testid="button-retry-detail"
+                  >
+                    Reintentar
+                  </button>
+                  <button
+                    onClick={() => setSelectedMovieId(null)}
+                    className="px-6 py-2 bg-secondary text-secondary-foreground rounded-md hover-elevate active-elevate-2"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : selectedMovieData && (
+            <MovieDetail
+              title={selectedMovieData.titulo}
+              synopsis={selectedMovieData.sinopsis || 'Sin sinopsis disponible'}
+              backdrop={selectedMovieData.image_url ? `${API_BASE_URL}${selectedMovieData.image_url}` : heroImage}
+              director={selectedMovieData.director}
+              genre={selectedMovieData.genero}
+              year={selectedMovieData.año}
+              duration={selectedMovieData.duracion}
+              rating={selectedMovieData.clasificacion}
+              isFavorite={isFavorite(selectedMovieId)}
+              onClose={() => setSelectedMovieId(null)}
+              onPlay={() => console.log('Play from detail')}
+              onToggleFavorite={() => toggleFavorite(selectedMovieId)}
+            />
+          )}
+        </>
       )}
     </div>
   );

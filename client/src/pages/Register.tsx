@@ -1,15 +1,25 @@
 import RegisterForm from "@/components/RegisterForm";
-import { useLocation } from "wouter";
+import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Register() {
-  const [, setLocation] = useLocation();
+  const { register } = useAuth();
+  const { toast } = useToast();
 
-  const handleRegister = (name: string, email: string, password: string) => {
-    console.log('Register attempt:', { name, email, password });
-    // Simulate successful registration
-    setTimeout(() => {
-      setLocation('/login');
-    }, 500);
+  const handleRegister = async (name: string, email: string, password: string) => {
+    try {
+      await register(name, email, password);
+      toast({
+        title: "Cuenta creada",
+        description: "Tu cuenta ha sido creada exitosamente",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo crear la cuenta",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

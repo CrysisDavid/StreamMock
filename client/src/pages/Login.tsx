@@ -1,15 +1,25 @@
 import LoginForm from "@/components/LoginForm";
-import { useLocation } from "wouter";
+import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
-  const [, setLocation] = useLocation();
+  const { login } = useAuth();
+  const { toast } = useToast();
 
-  const handleLogin = (email: string, password: string) => {
-    console.log('Login attempt:', { email, password });
-    // Simulate successful login
-    setTimeout(() => {
-      setLocation('/');
-    }, 500);
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      await login(email, password);
+      toast({
+        title: "Bienvenido",
+        description: "Has iniciado sesión exitosamente",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo iniciar sesión",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
