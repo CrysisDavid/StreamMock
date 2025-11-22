@@ -6,176 +6,154 @@ import MovieDetail from "@/components/MovieDetail";
 import Footer from "@/components/Footer";
 import { useMovies, useMovie } from "@/hooks/useMovies";
 import { useFavorites } from "@/hooks/useFavorites";
+import Pagination from "@/components/Pagination";
 
-import heroImage from '@assets/generated_images/Cityscape_hero_banner_7ee16f15.png';
+import heroImage from "@assets/generated_images/Cityscape_hero_banner_7ee16f15.png";
 
 export default function Home() {
-  const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
-  const { data: moviesData, isLoading, isError, error, refetch } = useMovies(1, 50);
-  const { data: selectedMovieData, isError: isDetailError, error: detailError, refetch: refetchDetail } = useMovie(selectedMovieId || 0);
-  const { isFavorite, toggleFavorite } = useFavorites();
+	const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
+	const [currentPage, setCurrentPage] = useState(1);
+	const itemsPerPage = 20;
 
-  const API_BASE_URL = 'http://localhost:8000';
+	const { data: moviesData, isLoading, isError, error, refetch } = useMovies(currentPage, itemsPerPage);
+	const { data: selectedMovieData, isError: isDetailError, error: detailError, refetch: refetchDetail } = useMovie(selectedMovieId || 0);
+	const { isFavorite, toggleFavorite } = useFavorites();
 
-  const movies = moviesData?.items || [];
-  const trendingMovies = movies.slice(0, 10).map(movie => ({
-    id: movie.id,
-    title: movie.titulo,
-    image: movie.image_url ? `${API_BASE_URL}${movie.image_url}` : heroImage,
-    year: movie.año,
-    rating: movie.clasificacion,
-    isFavorite: isFavorite(movie.id),
-  }));
+	const API_BASE_URL = "http://localhost:8000";
 
-  const popularMovies = movies.slice(10, 20).map(movie => ({
-    id: movie.id,
-    title: movie.titulo,
-    image: movie.image_url ? `${API_BASE_URL}${movie.image_url}` : heroImage,
-    year: movie.año,
-    rating: movie.clasificacion,
-    isFavorite: isFavorite(movie.id),
-  }));
+	const movies = moviesData?.items || [];
 
-  const actionMovies = movies.slice(20, 30).map(movie => ({
-    id: movie.id,
-    title: movie.titulo,
-    image: movie.image_url ? `${API_BASE_URL}${movie.image_url}` : heroImage,
-    year: movie.año,
-    rating: movie.clasificacion,
-    isFavorite: isFavorite(movie.id),
-  }));
+	// Mapear todas las películas directamente
+	const allMovies = movies.map((movie) => ({
+		id: movie.id,
+		title: movie.titulo,
+		image: movie.image_url ? `${API_BASE_URL}${movie.image_url}` : heroImage,
+		year: movie.año,
+		rating: movie.clasificacion,
+		isFavorite: isFavorite(movie.id),
+	}));
 
-  const heroMovie = movies[0];
-  const handleMovieClick = (id: number) => {
-    setSelectedMovieId(id);
-  };
+	const heroMovie = movies[0];
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="mt-4 text-muted-foreground">Cargando películas...</p>
-        </div>
-      </div>
-    );
-  }
+	const handleMovieClick = (id: number) => {
+		setSelectedMovieId(id);
+	};
 
-  if (isError) {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center max-w-md px-4">
-            <h2 className="text-2xl font-semibold mb-3">Error al cargar películas</h2>
-            <p className="text-muted-foreground mb-6">
-              {(error as any)?.message || 'No se pudieron cargar las películas. Por favor, verifica tu conexión.'}
-            </p>
-            <button
-              onClick={() => refetch()}
-              className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover-elevate active-elevate-2"
-              data-testid="button-retry"
-            >
-              Reintentar
-            </button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+	const handlePageChange = (page: number) => {
+		setCurrentPage(page);
+		window.scrollTo({ top: 0, behavior: "smooth" });
+	};
 
-  return (
-    <div className="min-h-screen">
-      <Header />
-      
-      {heroMovie && (
-        <MovieHero
-          title={heroMovie.titulo}
-          synopsis={heroMovie.sinopsis || 'Sin sinopsis disponible'}
-          backdrop={heroMovie.image_url ? `${API_BASE_URL}${heroMovie.image_url}` : heroImage}
-          year={heroMovie.año}
-          rating={heroMovie.clasificacion}
-          duration={heroMovie.duracion}
-          isFavorite={isFavorite(heroMovie.id)}
-          onPlay={() => console.log('Play hero movie')}
-          onToggleFavorite={() => toggleFavorite(heroMovie.id)}
-          onMoreInfo={() => handleMovieClick(heroMovie.id)}
-        />
-      )}
+	if (isLoading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<div className="text-center">
+					<div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+					<p className="mt-4 text-muted-foreground">Cargando películas...</p>
+				</div>
+			</div>
+		);
+	}
 
-      <div className="space-y-12 py-12">
-        <MovieGrid
-          title="Tendencias ahora"
-          movies={trendingMovies}
-          showNavigation={true}
-          onMovieClick={handleMovieClick}
-          onToggleFavorite={toggleFavorite}
-        />
+	if (isError) {
+		return (
+			<div className="min-h-screen">
+				<Header />
+				<div className="flex items-center justify-center min-h-[60vh]">
+					<div className="text-center max-w-md px-4">
+						<h2 className="text-2xl font-semibold mb-3">Error al cargar películas</h2>
+						<p className="text-muted-foreground mb-6">{(error as any)?.message || "No se pudieron cargar las películas. Por favor, verifica tu conexión."}</p>
+						<button onClick={() => refetch()} className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover-elevate active-elevate-2" data-testid="button-retry">
+							Reintentar
+						</button>
+					</div>
+				</div>
+				<Footer />
+			</div>
+		);
+	}
 
-        <MovieGrid
-          title="Popular en CineStream"
-          movies={popularMovies}
-          showNavigation={true}
-          onMovieClick={handleMovieClick}
-          onToggleFavorite={toggleFavorite}
-        />
+	return (
+		<div className="min-h-screen">
+			<Header />
 
-        <MovieGrid
-          title="Películas de Acción"
-          movies={actionMovies}
-          showNavigation={true}
-          onMovieClick={handleMovieClick}
-          onToggleFavorite={toggleFavorite}
-        />
-      </div>
+			{heroMovie && (
+				<MovieHero
+					title={heroMovie.titulo}
+					synopsis={heroMovie.sinopsis || "Sin sinopsis disponible"}
+					backdrop={heroMovie.image_url ? `${API_BASE_URL}${heroMovie.image_url}` : heroImage}
+					year={heroMovie.año}
+					rating={heroMovie.clasificacion}
+					duration={heroMovie.duracion}
+					isFavorite={isFavorite(heroMovie.id)}
+					onPlay={() => console.log("Play hero movie")}
+					onToggleFavorite={() => toggleFavorite(heroMovie.id)}
+					onMoreInfo={() => handleMovieClick(heroMovie.id)}
+				/>
+			)}
 
-      <Footer />
+			<div className="space-y-12 py-12">
+				<MovieGrid title="Todas las Películas" movies={allMovies} onMovieClick={handleMovieClick} onToggleFavorite={toggleFavorite} />
+			</div>
 
-      {selectedMovieId !== null && (
-        <>
-          {isDetailError ? (
-            <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center">
-              <div className="text-center max-w-md px-4">
-                <h2 className="text-2xl font-semibold mb-3">Error al cargar detalles</h2>
-                <p className="text-muted-foreground mb-6">
-                  {(detailError as any)?.message || 'No se pudieron cargar los detalles de la película.'}
-                </p>
-                <div className="flex gap-3 justify-center">
-                  <button
-                    onClick={() => refetchDetail()}
-                    className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover-elevate active-elevate-2"
-                    data-testid="button-retry-detail"
-                  >
-                    Reintentar
-                  </button>
-                  <button
-                    onClick={() => setSelectedMovieId(null)}
-                    className="px-6 py-2 bg-secondary text-secondary-foreground rounded-md hover-elevate active-elevate-2"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : selectedMovieData && (
-            <MovieDetail
-              title={selectedMovieData.titulo}
-              synopsis={selectedMovieData.sinopsis || 'Sin sinopsis disponible'}
-              backdrop={selectedMovieData.image_url ? `${API_BASE_URL}${selectedMovieData.image_url}` : heroImage}
-              director={selectedMovieData.director}
-              genre={selectedMovieData.genero}
-              year={selectedMovieData.año}
-              duration={selectedMovieData.duracion}
-              rating={selectedMovieData.clasificacion}
-              isFavorite={isFavorite(selectedMovieId)}
-              onClose={() => setSelectedMovieId(null)}
-              onPlay={() => console.log('Play from detail')}
-              onToggleFavorite={() => toggleFavorite(selectedMovieId)}
-            />
-          )}
-        </>
-      )}
-    </div>
-  );
+			{/* Paginación */}
+			{moviesData && moviesData.pages > 1 && (
+				<div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+					<Pagination
+						currentPage={moviesData.current_pg}
+						totalPages={moviesData.pages}
+						hasNext={moviesData.has_next}
+						hasPrev={moviesData.has_prev}
+						totalRecords={moviesData.total_records}
+						limit={moviesData.limit}
+						onPageChange={handlePageChange}
+					/>
+				</div>
+			)}
+
+			<Footer />
+
+			{selectedMovieId !== null && (
+				<>
+					{isDetailError ? (
+						<div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center">
+							<div className="text-center max-w-md px-4">
+								<h2 className="text-2xl font-semibold mb-3">Error al cargar detalles</h2>
+								<p className="text-muted-foreground mb-6">{(detailError as any)?.message || "No se pudieron cargar los detalles de la película."}</p>
+								<div className="flex gap-3 justify-center">
+									<button
+										onClick={() => refetchDetail()}
+										className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover-elevate active-elevate-2"
+										data-testid="button-retry-detail"
+									>
+										Reintentar
+									</button>
+									<button onClick={() => setSelectedMovieId(null)} className="px-6 py-2 bg-secondary text-secondary-foreground rounded-md hover-elevate active-elevate-2">
+										Cerrar
+									</button>
+								</div>
+							</div>
+						</div>
+					) : (
+						selectedMovieData && (
+							<MovieDetail
+								title={selectedMovieData.titulo}
+								synopsis={selectedMovieData.sinopsis || "Sin sinopsis disponible"}
+								backdrop={selectedMovieData.image_url ? `${API_BASE_URL}${selectedMovieData.image_url}` : heroImage}
+								director={selectedMovieData.director}
+								genre={selectedMovieData.genero}
+								year={selectedMovieData.año}
+								duration={selectedMovieData.duracion}
+								rating={selectedMovieData.clasificacion}
+								isFavorite={isFavorite(selectedMovieId)}
+								onClose={() => setSelectedMovieId(null)}
+								onPlay={() => console.log("Play from detail")}
+								onToggleFavorite={() => toggleFavorite(selectedMovieId)}
+							/>
+						)
+					)}
+				</>
+			)}
+		</div>
+	);
 }

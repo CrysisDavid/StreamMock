@@ -76,6 +76,9 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const host = process.env.HOST || 'localhost';
+    const fullUrl = `${protocol}://${host}:${port}`;
+    log(`serving on port ${port} - ${fullUrl}`);
   });
 })();

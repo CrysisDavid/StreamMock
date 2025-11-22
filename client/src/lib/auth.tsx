@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI, User } from './api';
 import { useLocation } from 'wouter';
+import { useUserStore } from './userStore';
 
 interface AuthContextType {
   user: User | null;
@@ -14,38 +15,39 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const userFromStore = useUserStore((state) => state.user);
+  const setUserInStore = useUserStore((state) => state.setUser);
+  const clearUserInStore = useUserStore((state) => state.clearUser);
+  
+  const [isLoading] = useState(false);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+    console.log('=== AuthProvider montado ===');
+    console.log('Usuario en store:', userFromStore);
+    
     const token = localStorage.getItem('access_token');
-    const storedUser = localStorage.getItem('user');
-
-    if (token && storedUser) {
-      try {
-        const isValid = await authAPI.validateToken();
-        if (isValid) {
-          setUser(JSON.parse(storedUser));
-        } else {
-          clearAuth();
-        }
-      } catch {
-        clearAuth();
+    console.log('Token presente:', !!token);
+    
+    // Si hay usuario en el store, la sesión es válida
+    if (userFromStore) {
+      console.log('✅ Usuario encontrado en store, sesión activa');
+    } else {
+      console.log('⚠️ No hay usuario en store');
+      // Si no hay usuario pero hay token, limpiar el token
+      if (token) {
+        console.log('Limpiando token huérfano');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
       }
     }
-    setIsLoading(false);
-  };
+  }, [userFromStore]);
 
   const clearAuth = () => {
+    console.log('Limpiando autenticación');
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-    setUser(null);
+    clearUserInStore();
   };
 
   const login = async (email: string, password: string) => {
@@ -55,10 +57,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         contraseña: password,
       });
 
+      console.log('Login exitoso, guardando usuario:', response.user);
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      setUser(response.user);
+      setUserInStore(response.user);
+      
+      // Verificar que se guardó correctamente
+      setTimeout(() => {
+        const stored = localStorage.getItem('user-storage');
+        console.log('Usuario guardado en localStorage:', stored);
+      }, 100);
+      
       setLocation('/');
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Error al iniciar sesión';
@@ -96,9 +105,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: userFromStore,
         isLoading,
-        isAuthenticated: !!user,
+        isAuthenticated: !!userFromStore,
         login,
         register,
         logout,
