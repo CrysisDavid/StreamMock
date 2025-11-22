@@ -245,9 +245,11 @@ Este proyecto está bajo la Licencia MIT.
 **David Crysis**
 - GitHub: [@CrysisDavid](https://github.com/CrysisDavid)
 - Repositorio: [StreamMock](https://github.com/CrysisDavid/StreamMock)
+- API: [API del proyecto](https://github.com/CrysisDavid/lp3-taller2)
 
 ## 🙏 Agradecimientos
 
 - shadcn/ui por los componentes
 - Lucide por los iconos
 - La comunidad de React y Vite
+
